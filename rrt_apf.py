@@ -172,6 +172,7 @@ def run():
     env.load_gripper()
     passed = 0
     for trial in range(num_trials):
+        env.set_obstacle_highest_position()
         object_id = env._objects_body_ids[0]
         position, grasp_angle = get_grasp_position_angle(object_id)
         grasp_success = env.execute_grasp(position, grasp_angle)

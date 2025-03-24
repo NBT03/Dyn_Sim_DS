@@ -155,7 +155,8 @@ def run_bidirectional_rrt():
     path_lengths = []
     
     for trial in range(num_trials):
-        print(f"Thử nghiệm thứ: {trial + 1}")
+        env.set_obstacle_highest_position()
+
         object_id = env._objects_body_ids[0]
         position, grasp_angle = get_grasp_position_angle(object_id)
         grasp_success = env.execute_grasp(position, grasp_angle)
@@ -182,7 +183,7 @@ def run_bidirectional_rrt():
                 env.set_joint_positions(env.robot_home_joint_config)
                 markers = []
                 for joint_state in path_conf:
-                    env.move_joints(joint_state, speed=0.01)
+                    env.move_joints(joint_state, speed=0.003)
                     link_state = p.getLinkState(env.robot_body_id, env.robot_end_effector_link_index)
                     # markers.append(sim.SphereMarker(link_state[0], radius=0.01))
                 print("Path executed. Dropping the object")
@@ -193,7 +194,7 @@ def run_bidirectional_rrt():
                 path_conf_reversed = path_conf[::-1]
                 if path_conf_reversed:
                     for joint_state in path_conf_reversed:
-                        env.move_joints(joint_state, speed=0.01)
+                        env.move_joints(joint_state, speed=0.003)
                         link_state = p.getLinkState(env.robot_body_id, env.robot_end_effector_link_index)
                 #         markers.append(sim.SphereMarker(link_state[0], radius=0.01))
                 # markers = None

@@ -25,10 +25,10 @@ class PyBulletSim:
         # load Doosan robot
         self.robot_body_id = p.loadURDF(
             "assets/doosan/doosan_origin.urdf", [0, 0, 0.8], p.getQuaternionFromEuler([0, 0, 0]))
-        # self._base_id = p.loadURDF(
-        #     "assets/doosan/base_doosan.urdf", [0.75,0.3,0], p.getQuaternionFromEuler([0,0,np.pi]),useFixedBase=True)
-        # self._cabin_id = p.loadURDF(
-        #     "assets/doosan/Cabin.urdf",[-0.75,-1,0], p.getQuaternionFromEuler([np.pi/2, 0, np.pi/2]),useFixedBase=True)
+        self._base_id = p.loadURDF(
+            "assets/doosan/base_doosan.urdf", [0.75,0.3,0], p.getQuaternionFromEuler([0,0,np.pi]),useFixedBase=True)
+        self._cabin_id = p.loadURDF(
+            "assets/doosan/Cabin.urdf",[-0.75,-1,0], p.getQuaternionFromEuler([np.pi/2, 0, np.pi/2]),useFixedBase=True)
         self._gripper_body_id = None
         self.robot_end_effector_link_index = 6
         self._robot_tool_offset = [0, 0, 0]

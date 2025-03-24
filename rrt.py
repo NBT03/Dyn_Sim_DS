@@ -12,8 +12,10 @@ delta_q = 0.1
 def visualize_path(q_1, q_2, env, color=[0, 1, 0]):
     env.set_joint_positions(q_1)
     point_1 = list(p.getLinkState(env.robot_body_id, 6)[0])
+    point_1[2] -= 0.15
     env.set_joint_positions(q_2)
     point_2 = list(p.getLinkState(env.robot_body_id, 6)[0])
+    point_2[2] -= 0.15
     p.addUserDebugLine(point_1, point_2, color, 1.5)
 
 def rrt(q_init, q_goal, MAX_ITERS, delta_q, steer_goal_p, env, distance=0.12):
@@ -48,66 +50,6 @@ def rrt(q_init, q_goal, MAX_ITERS, delta_q, steer_goal_p, env, distance=0.12):
         return path
     else:
         return None
-
-def execute_path_with_obstacle_awareness(env, normal_path, elevated_path, switch_distance=0.5):
-    """
-    Thực thi đường đi cao nhất để tránh vật cản ở vị trí cao nhất
-    
-    Args:
-        env: Môi trường mô phỏng
-        normal_path: Đường đi khi vật cản ở vị trí thấp (không sử dụng)
-        elevated_path: Đường đi khi vật cản ở vị trí cao
-        switch_distance: Khoảng cách kích hoạt chuyển đổi đường đi (không sử dụng)
-    """
-    if not elevated_path:
-        print("Không có đường đi ở vị trí cao, không thể thực thi")
-        return
-    
-    print(f"Bắt đầu thực thi đường đi ở vị trí cao nhất...")
-    print(f"Quỹ đạo cao: {len(elevated_path)} điểm")
-    
-    # Chỉ hiển thị đường đi cao hơn màu xanh dương
-    for i in range(len(elevated_path) - 1):
-        visualize_path(elevated_path[i], elevated_path[i+1], env, color=[0, 0, 1])
-    
-    # Đặt robot về vị trí bắt đầu
-    env.set_joint_positions(env.robot_home_joint_config)
-    
-    # Thực thi đường đi cao
-    print("Bắt đầu di chuyển theo quỹ đạo cao nhất")
-    
-    for i, config in enumerate(elevated_path):
-        print(f"Di chuyển đến điểm {i+1}/{len(elevated_path)}")
-        
-        # Di chuyển đến điểm tiếp theo trên đường đi cao
-        env.move_joints(config, speed=0.03)
-        
-        # Đợi một chút để đảm bảo robot hoàn thành di chuyển
-        time.sleep(0.1)
-    
-    print("Hoàn thành thực thi đường đi cao nhất")
-
-def find_closest_config(path, query_config):
-    """
-    Tìm cấu hình gần nhất với query_config trong path
-    
-    Args:
-        path: Danh sách các cấu hình
-        query_config: Cấu hình cần tìm điểm gần nhất
-        
-    Returns:
-        Chỉ số của cấu hình gần nhất
-    """
-    min_distance = float('inf')
-    closest_index = 0
-    
-    for i, config in enumerate(path):
-        distance = get_euclidean_distance(config, query_config)
-        if distance < min_distance:
-            min_distance = distance
-            closest_index = i
-    
-    return closest_index
 
 def semi_random_sample(steer_goal_p, q_goal):
     prob = random.random()
@@ -155,37 +97,34 @@ def run():
     env.load_gripper()
     passed = 0
     for trial in range(num_trials):
-        # Đặt lại vật cản về vị trí ban đầu
-        env.reset_moving_obstacle()
-        
+        env.set_obstacle_highest_position()
         object_id = env._objects_body_ids[0]
         position, grasp_angle = get_grasp_position_angle(object_id)
         grasp_success = env.execute_grasp(position, grasp_angle)
         if grasp_success:
-            # Đặt vật cản ở vị trí cao nhất
-            env.set_obstacle_highest_position()
-            
-            # Tạo đường đi với vật cản ở vị trí cao nhất
-            print("Tạo đường đi với vật cản ở vị trí cao nhất...")
-            elevated_path = rrt(env.robot_home_joint_config,
-                              env.robot_goal_joint_config, MAX_ITERS, delta_q, 0.5, env)
-            
-            if elevated_path is None:
-                print("Không thể tìm đường đi với vật cản ở vị trí cao nhất. Bỏ qua lượt này.")
-                path_lengths.append(None)
-                continue
-            
-            # Thực thi đường đi cao nhất
-            execute_path_with_obstacle_awareness(env, None, elevated_path)
-            
-            print("Path executed. Dropping the object")
-            env.open_gripper()
-            env.step_simulation(num_steps=5)
-            env.close_gripper()
-            
-            # Đưa robot về vị trí ban đầu
-            env.robot_go_home(speed=0.1)
-            
+            path_conf = rrt(env.robot_home_joint_config,
+                            env.robot_goal_joint_config, MAX_ITERS, delta_q, 0.5, env)
+            if path_conf is None:
+                print("No collision-free path is found within the time budget. Continuing...")
+                path_lengths.append(None)  
+            else:
+                path_length = 0
+                for i in range(1, len(path_conf)):
+                    path_length += get_euclidean_distance(path_conf[i-1], path_conf[i])
+                path_lengths.append(path_length)
+                env.set_joint_positions(env.robot_home_joint_config)
+                markers = []
+                for joint_state in path_conf:
+                    env.move_joints(joint_state, speed=0.01)
+                    link_state = p.getLinkState(env.robot_body_id, env.robot_end_effector_link_index)
+                    # markers.append(sim.SphereMarker(link_state[0], radius=0.02))
+                print("Path executed. Dropping the object")
+                env.open_gripper()
+                env.step_simulation(num_steps=5)
+                env.close_gripper()
+                for joint_state in reversed(path_conf):
+                    env.move_joints(joint_state, speed=0.01)
+                markers = None
             p.removeAllUserDebugItems()
         env.robot_go_home()
         object_pos, _ = p.getBasePositionAndOrientation(object_id)
@@ -194,7 +133,6 @@ def run():
             object_pos[2] <= 0.2:
             passed += 1
         env.reset_objects()
-
 def draw():
     print("Starting draw function")
     line_ids = [None, None, None]
@@ -254,7 +192,6 @@ def draw():
         except Exception as e:
             print(f"Exception in draw: {e}")
         time.sleep(0.1)
-
 if __name__ == "__main__":
     random.seed(5)
     object_shapes = [
@@ -264,5 +201,5 @@ if __name__ == "__main__":
     thread1 = threading.Thread(target=run)
     thread2 = threading.Thread(target=draw)
     thread1.start()
-    thread2.start()  # Bỏ comment dòng này để chạy thread2
+    # thread2.start()
     

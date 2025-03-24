@@ -9,7 +9,7 @@ from scipy.spatial import cKDTree
 import numpy as np
 
 MAX_ITERS = 10000
-delta_q = 0.2
+delta_q = 0.1
 
 class Node:
     def __init__(self, joint_positions, parent=None):
@@ -295,7 +295,7 @@ def run_bidirectional_rrt():
                 # Di chuyển từng bước một
                 for i, joint_state in enumerate(path_conf):
                     print(f"Di chuyển đến điểm {i+1}/{len(path_conf)}")
-                    env.move_joints(joint_state, speed=0.01)
+                    env.move_joints(joint_state, speed=0.001)
                     # Thêm step simulation để đảm bảo di chuyển trơn tru
                     env.step_simulation(num_steps=5)
                     # Đợi một chút giữa các bước di chuyển
@@ -313,7 +313,7 @@ def run_bidirectional_rrt():
                 path_conf_reversed = path_conf[::-1]
                 if path_conf_reversed:
                     for i, joint_state in enumerate(path_conf_reversed):
-                        env.move_joints(joint_state, speed=0.01)
+                        env.move_joints(joint_state, speed=0.001)
                         # Thêm step simulation để đảm bảo di chuyển trơn tru
                         env.step_simulation(num_steps=5)
                         # Đợi một chút giữa các bước di chuyển
