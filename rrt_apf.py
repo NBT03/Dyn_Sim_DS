@@ -191,7 +191,7 @@ def run():
                 env.set_joint_positions(env.robot_home_joint_config)
                 markers = []
                 for joint_state in path_conf:
-                    env.move_joints(joint_state, speed=0.05)
+                    env.move_joints(joint_state, speed=0.01)
                     # link_state = p.getLinkState(env.robot_body_id, env.robot_end_effector_link_index)
                     # markers.append(sim.SphereMarker(link_state[0], radius=0.02))
 
@@ -202,7 +202,7 @@ def run():
                 env.close_gripper()
 
                 for joint_state in reversed(path_conf):
-                    env.move_joints(joint_state, speed=0.05)
+                    env.move_joints(joint_state, speed=0.01)
             p.removeAllUserDebugItems()
 
         env.robot_go_home()
@@ -290,5 +290,5 @@ if __name__ == "__main__":
     thread1 = threading.Thread(target=run)
     thread2 = threading.Thread(target=draw)
     thread1.start()
-    # thread2.start()
+    thread2.start()
     

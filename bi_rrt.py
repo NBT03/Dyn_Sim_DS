@@ -183,7 +183,7 @@ def run_bidirectional_rrt():
                 env.set_joint_positions(env.robot_home_joint_config)
                 markers = []
                 for joint_state in path_conf:
-                    env.move_joints(joint_state, speed=0.003)
+                    env.move_joints(joint_state, speed=0.01)
                     link_state = p.getLinkState(env.robot_body_id, env.robot_end_effector_link_index)
                     # markers.append(sim.SphereMarker(link_state[0], radius=0.01))
                 print("Path executed. Dropping the object")
@@ -194,7 +194,7 @@ def run_bidirectional_rrt():
                 path_conf_reversed = path_conf[::-1]
                 if path_conf_reversed:
                     for joint_state in path_conf_reversed:
-                        env.move_joints(joint_state, speed=0.003)
+                        env.move_joints(joint_state, speed=0.01)
                         link_state = p.getLinkState(env.robot_body_id, env.robot_end_effector_link_index)
                 #         markers.append(sim.SphereMarker(link_state[0], radius=0.01))
                 # markers = None
@@ -333,4 +333,4 @@ if __name__ == "__main__":
     thread1 = threading.Thread(target=run_bidirectional_rrt)
     thread2 = threading.Thread(target=draw)
     thread1.start()
-    # thread2.start()
+    thread2.start()
