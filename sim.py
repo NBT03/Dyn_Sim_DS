@@ -10,7 +10,7 @@ import threading
 class PyBulletSim:
     def __init__(self, use_random_objects=False, object_shapes=None, gui=True):
         self._workspace1_bounds = np.array([
-            [-0.16, -0.17],
+            [-0.5, -0.6],
             [-0.55, -0.55],
             [0.78, 0.80]
         ])
@@ -24,11 +24,11 @@ class PyBulletSim:
 
         # load Doosan robot
         self.robot_body_id = p.loadURDF(
-            "assets/doosan/doosan_origin.urdf", [0, 0, 0.8], p.getQuaternionFromEuler([0, 0, 0]))
+            "assets/doosan/doosan_origin.urdf", [0, 0, 0.75], p.getQuaternionFromEuler([0, 0, 0.001]))
         self._base_id = p.loadURDF(
-            "assets/doosan/base_doosan.urdf", [0.75,0.3,0], p.getQuaternionFromEuler([0,0,np.pi]),useFixedBase=True)
+            "assets/doosan/base_doosan.urdf", [0.9,0.3,0], p.getQuaternionFromEuler([0,0,np.pi]),useFixedBase=True)
         self._cabin_id = p.loadURDF(
-            "assets/doosan/Cabin.urdf",[-0.75,-1,0], p.getQuaternionFromEuler([np.pi/2, 0, np.pi/2]),useFixedBase=True)
+            "assets/doosan/Cabin.urdf",[-0.8,0.75,0], p.getQuaternionFromEuler([np.pi/2, 0, 0]),useFixedBase=True)
         self._gripper_body_id = None
         self.robot_end_effector_link_index = 6
         self._robot_tool_offset = [0, 0, 0]
@@ -38,14 +38,14 @@ class PyBulletSim:
         self._robot_joint_indices = [
             x[0] for x in robot_joint_info if x[2] == p.JOINT_REVOLUTE]
         self._joint_epsilon = 1e-3
-        self.robot_home_joint_config = [np.pi*(-94.06/180),
+        self.robot_home_joint_config = [np.pi*(-184.06/180),
                                         np.pi*(-13.65/180),
                                         np.pi*(101.87/180),
                                         np.pi*(1.48/180),
                                         np.pi * (89.39/180),
                                         np.pi * (3.73/180)]
 
-        self.robot_goal_joint_config = [ np.pi * (94.06/180),
+        self.robot_goal_joint_config = [ np.pi * (-75.04/180),
                                         np.pi * (30 / 180),
                                         np.pi * (60.87 / 180),
                                         np.pi * (1.48 / 180),
@@ -54,7 +54,7 @@ class PyBulletSim:
 
         self.move_joints(self.robot_home_joint_config, speed=0.05)
         self._tote_id = p.loadURDF(
-            "assets/tote/tote_bin.urdf",[-0.3,-0.35,0.80], p.getQuaternionFromEuler([np.pi/2, 0, 0]), useFixedBase=True)
+            "assets/tote/tote_bin.urdf",[-0.55,0.2,0.80], p.getQuaternionFromEuler([np.pi/2, 0, 0]), useFixedBase=True)
         self._object_colors = get_tableau_palette()
         if object_shapes is not None:
             self._object_shapes = object_shapes
@@ -79,8 +79,8 @@ class PyBulletSim:
             #            useFixedBase=True
             #            ),
             p.loadURDF('assets/obstacles/block.urdf',
-                       basePosition=[0.35, -0.35, 0.85],
-                       useFixedBase=False
+                       basePosition=[-0.2, -0.55, 1.0],
+                       useFixedBase=True
                        ),
             # p.loadURDF('assets/obstacles/block.urdf',
             #            basePosition=[0.4, 0.4, 0.95],
@@ -112,7 +112,7 @@ class PyBulletSim:
         # Giới hạn di chuyển (sai số 0.05 quanh vị trí ban đầu)
         self.obstacle_path_limit = [
             self.obstacle_initial_position[2] - 0.05,  # Giới hạn dưới
-            self.obstacle_initial_position[2] + 0.18   # Giới hạn trên (tăng lên để dễ nhìn thấy sự khác biệt)
+            self.obstacle_initial_position[2] + 0.3   # Giới hạn trên (tăng lên để dễ nhìn thấy sự khác biệt)
         ]
 
     def get_distance_to_obstacle(self, q_nearest, obstacle):
@@ -271,7 +271,7 @@ class PyBulletSim:
 
     def reset_objects(self):
         for object_body_id in self._objects_body_ids:
-            random_position = [-0.163733, -0.46024903,0.92727434]
+            random_position = [-0.4, 0 ,0.92727434]
             random_orientation = [-0.41378682, -0.47447575, 0.07145692]
             p.resetBasePositionAndOrientation(
                 object_body_id, random_position, p.getQuaternionFromEuler(random_orientation))
@@ -427,7 +427,7 @@ class PyBulletSim:
         self.velocity = 0.05  # Tốc độ di chuyển rất chậm
         self.direction_z = 1  # Hướng di chuyển ban đầu (lên)
         self.min_z = self.moving_obstacle_initial_pos[2] - 0.05  # Giới hạn dưới
-        self.max_z = self.moving_obstacle_initial_pos[2] + 0.15  # Giới hạn trên
+        self.max_z = self.moving_obstacle_initial_pos[2] + 0.1  # Giới hạn trên
         
         print(f"Đã thêm vật cản di chuyển tại vị trí {self.moving_obstacle_initial_pos}")
         

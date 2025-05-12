@@ -24,6 +24,41 @@ def visualize_path(q_1, q_2, env, color=[0, 1, 0], tree='start'):
     debug_color = color if tree == 'start' else [1, 0, 1]
     p.addUserDebugLine(point_1, point_2, debug_color, 1.0)
 
+def check_moving_obstacle_collision(q, env, obstacle_id, margin=0):
+    """
+    Kiểm tra va chạm với vật cản di chuyển tại vị trí cao nhất của nó
+    """
+    # Lưu vị trí hiện tại của vật cản
+    current_pos, current_orn = p.getBasePositionAndOrientation(obstacle_id)
+    
+    # Lấy thông tin về vật cản di chuyển
+    obstacle_info = env.get_moving_obstacle_info()
+    if obstacle_info is None:
+        return False
+        
+    # Tạo vị trí cao nhất của vật cản
+    highest_pos = list(current_pos)
+    highest_pos[2] = obstacle_info['max_z']
+    
+    # Di chuyển vật cản đến vị trí cao nhất để kiểm tra
+    p.resetBasePositionAndOrientation(obstacle_id, highest_pos, current_orn)
+    
+    # Đặt robot vào cấu hình cần kiểm tra
+    env.set_joint_positions(q)
+    
+    # Kiểm tra va chạm
+    distance = 0.1 + margin  # Thêm margin để có khoảng an toàn
+    collision = False
+    
+    closest_points = p.getClosestPoints(env.robot_body_id, obstacle_id, distance)
+    if closest_points is not None and len(closest_points) != 0:
+        collision = True
+    
+    # Trả vật cản về vị trí ban đầu
+    p.resetBasePositionAndOrientation(obstacle_id, current_pos, current_orn)
+    
+    return collision
+
 def attractive_force(q_current, q_goal, k_att=1.0):
     diff = np.array(q_goal) - np.array(q_current)
     return k_att * diff
@@ -138,7 +173,11 @@ def bidirectional_rrt(env, q_start, q_goal, MAX_ITERS, delta_q, steer_goal_p, ma
             q_rand = semi_random_sample(steer_goal_p, q_goal if tree_identifier == 'start' else q_start)
         q_nearest = nearest([node.joint_positions for node in current_tree], q_rand)
         q_new = modified_steer_birrt(q_nearest, q_rand, delta_q, q_goal, env, tree_identifier)
-        if not env.check_collision(q_new, distance=0.165):
+        static_collision = env.check_collision(q_new, 0.18)
+        moving_obstacle_id = env.moving_obstacle_id
+        # Kiểm tra va chạm với vật cản di chuyển ở vị trí cao nhất
+        moving_collision = check_moving_obstacle_collision(q_new, env, moving_obstacle_id)
+        if not static_collision and not moving_collision:
             new_node = Node(q_new)
             nearest_node = next(node for node in current_tree if node.joint_positions == q_nearest)
             new_node.parent = nearest_node

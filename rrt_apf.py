@@ -19,14 +19,55 @@ def visualize_path(q_1, q_2, env, color=[0, 1, 0]):
     point_2[2] -= 0.15
     p.addUserDebugLine(point_1, point_2, color, 1.5)
 
+def check_moving_obstacle_collision(q, env, obstacle_id, margin=0):
+    """
+    Kiểm tra va chạm với vật cản di chuyển tại vị trí cao nhất của nó
+    """
+    # Lưu vị trí hiện tại của vật cản
+    current_pos, current_orn = p.getBasePositionAndOrientation(obstacle_id)
+    
+    # Lấy thông tin về vật cản di chuyển
+    obstacle_info = env.get_moving_obstacle_info()
+    if obstacle_info is None:
+        return False
+        
+    # Tạo vị trí cao nhất của vật cản
+    highest_pos = list(current_pos)
+    highest_pos[2] = obstacle_info['max_z']
+    
+    # Di chuyển vật cản đến vị trí cao nhất để kiểm tra
+    p.resetBasePositionAndOrientation(obstacle_id, highest_pos, current_orn)
+    
+    # Đặt robot vào cấu hình cần kiểm tra
+    env.set_joint_positions(q)
+    
+    # Kiểm tra va chạm
+    distance = 0.1 + margin  # Thêm margin để có khoảng an toàn
+    collision = False
+    
+    closest_points = p.getClosestPoints(env.robot_body_id, obstacle_id, distance)
+    if closest_points is not None and len(closest_points) != 0:
+        collision = True
+    
+    # Trả vật cản về vị trí ban đầu
+    p.resetBasePositionAndOrientation(obstacle_id, current_pos, current_orn)
+    
+    return collision
+
 def rrt(q_init, q_goal, MAX_ITERS, delta_q, steer_goal_p, env, distance=0.12):
     V, E = [q_init], []
+    moving_obstacle_id = env.moving_obstacle_id
     path, found = [], False
     for i in range(MAX_ITERS):
         q_rand = semi_random_sample(steer_goal_p, q_goal)
         q_nearest = nearest(V, q_rand)
         q_new = modified_steer(q_nearest, q_rand, delta_q, q_goal, env)
-        if not env.check_collision(q_new, 0.155):
+        static_collision = env.check_collision(q_new, 0.18)
+        
+        # Kiểm tra va chạm với vật cản di chuyển ở vị trí cao nhất
+        moving_collision = check_moving_obstacle_collision(q_new, env, moving_obstacle_id)
+        
+        if not static_collision and not moving_collision:
             if q_new not in V:
                 V.append(q_new)
             if (q_nearest, q_new) not in E:
