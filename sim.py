@@ -79,7 +79,7 @@ class PyBulletSim:
             #            useFixedBase=True
             #            ),
             p.loadURDF('assets/obstacles/block.urdf',
-                       basePosition=[-0.2, -0.55, 1.0],
+                       basePosition=[-0.2, -0.55, 1.02],
                        useFixedBase=True
                        ),
             # p.loadURDF('assets/obstacles/block.urdf',

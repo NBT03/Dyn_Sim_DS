@@ -30,7 +30,7 @@ def check_moving_obstacle_collision(q, env, obstacle_id, margin=0):
     """
     # Lưu vị trí hiện tại của vật cản
     current_pos, current_orn = p.getBasePositionAndOrientation(obstacle_id)
-    
+    # print(p.getBasePositionAndOrientation(obstacle_id))
     # Lấy thông tin về vật cản di chuyển
     obstacle_info = env.get_moving_obstacle_info()
     if obstacle_info is None:
@@ -303,9 +303,15 @@ def run_bidirectional_rrt():
                 max_connection_distance=0.15
             )
             if path_conf is None:
+                print(path_conf)
                 print("Không thể tìm đường đi với vật cản ở vị trí cao. Bỏ qua lượt này.")
                 path_lengths.append(None)  # Ghi nhận không tìm thấy đường đi
             else:
+                path_conf_degrees = []
+                for joint_angles in path_conf:
+                    degrees_row = [angle * 180.0 / np.pi for angle in joint_angles]
+                    path_conf_degrees.append(degrees_row)
+                print(path_conf_degrees)
                 print(f"Đã tìm thấy đường đi với {len(path_conf)} điểm")
                 # In ra các góc khớp (nếu cần)
                 for joint_state in path_conf:
